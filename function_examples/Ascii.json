@@ -1,0 +1,24 @@
+{
+    "Name": "Ascii",
+    "Description": "Return the ASCII character code of the first character of a string.",
+    "Syntax": "Ascii(s1)",
+    "Arguments": [
+        {
+            "name": "s1",
+            "description": "Any expression evaluating to a string"
+        }
+    ],
+    "Returns": "The character code of the first character of the string",
+    "Exceptions": "If the argument is not a string, an error value is returned",
+    "Notes": "None",
+    "Example": [
+        {
+            "code": "Ascii(\"D\")",
+            "description": "[Returns 68, the ASCII character code for D]"
+        },
+        {
+            "code": "Ascii(\"Program\")",
+            "description": "[Returns 80, the ASCII character code for the first letter of the string]"
+        }
+    ]
+}

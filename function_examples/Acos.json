@@ -1,0 +1,24 @@
+{
+    "Name": "Acos",
+    "Description": "Return the inverse cosine (arccos) of an integer or real number. The inverse cosine of x is the angle in radians whose cosine is equal to x .",
+    "Syntax": "Acos(x)",
+    "Arguments": [
+        {
+            "name": "x",
+            "description": "Must be a real number between -1.0 and 1.0, inclusive"
+        }
+    ],
+    "Returns": "The inverse cosine of x , in radians x",
+    "Exceptions": "If x is not a number, or is less than -1.0 or greater than 1.0, returns an error value x",
+    "Notes": "None",
+    "Example": [
+        {
+            "code": "Acos(-0.5)",
+            "description": "[Returns 2.0944]"
+        },
+        {
+            "code": "Acos(0.75)",
+            "description": "[Returns 0.72273]"
+        }
+    ]
+}

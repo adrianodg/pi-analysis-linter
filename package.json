@@ -1,0 +1,39 @@
+{
+  "name": "pi-analysis",
+  "displayName": "PI Analysis Expression",
+  "description": "Linter and Syntax for PI AF Analysis",
+  "version": "0.1.0",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:pi-analysis"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "pi-analysis",
+        "aliases": [
+          "PI Analysis",
+          "PI AF Analysis"
+        ],
+        "extensions": [
+          ".piafexp"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pi-analysis",
+        "scopeName": "source.pi-analysis",
+        "path": "./syntaxes/pi-analysis.tmLanguage.json"
+      }
+    ]
+  }
+}

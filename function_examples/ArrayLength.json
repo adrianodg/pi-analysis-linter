@@ -1,0 +1,20 @@
+{
+    "Name": "ArrayLength",
+    "Description": "Get the length of an array.",
+    "Syntax": "ArrayLength(a1)",
+    "Arguments": [
+        {
+            "name": "a1",
+            "description": "a variable representing the array to operate on"
+        }
+    ],
+    "Returns": "The number of values in the array",
+    "Exceptions": "None",
+    "Notes": "None",
+    "Example": [
+        {
+            "code": "ArrayLength(Data)",
+            "description": "[Return the number of values in an array named Data]"
+        }
+    ]
+}

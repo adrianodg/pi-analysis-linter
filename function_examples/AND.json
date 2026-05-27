@@ -1,0 +1,20 @@
+{
+    "Name": "AND",
+    "Description": "The logical conjunction of two expressions that returns True if both expressions are true and False otherwise.",
+    "Syntax": "None",
+    "Arguments": [
+        {
+            "name": "expression1,",
+            "description": "expression2 Any expression that evaluates to true or false"
+        }
+    ],
+    "Returns": "True if both expressions are true (non-zero) and False (zero) otherwise True False",
+    "Exceptions": "None",
+    "Notes": "If the inputs are numeric, AND can do bitwise operations. AND",
+    "Example": [
+        {
+            "code": "('att1' > 50) AND ('att2' = \"good\")",
+            "description": "None"
+        }
+    ]
+}

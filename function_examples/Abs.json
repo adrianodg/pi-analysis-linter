@@ -1,0 +1,24 @@
+{
+    "Name": "Abs",
+    "Description": "Return the absolute value of an integer or real number.",
+    "Syntax": "Abs(x)",
+    "Arguments": [
+        {
+            "name": "x",
+            "description": "An integer or real number"
+        }
+    ],
+    "Returns": "The absolute value of x",
+    "Exceptions": "Return an error value if x is not an integer or real number x",
+    "Notes": "Unit of measure of the argument, if it exists, is carried over to the result",
+    "Example": [
+        {
+            "code": "Abs(-2.2)",
+            "description": "[Returns 2.2]"
+        },
+        {
+            "code": "Abs('att1')",
+            "description": "[Return the absolute value of 'att1' at trigger time]"
+        }
+    ]
+}

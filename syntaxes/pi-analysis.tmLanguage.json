@@ -1,0 +1,124 @@
+{
+  "scopeName": "source.pi-analysis",
+  "patterns": [
+    {
+      "name": "comment.line.metadata.variable.pi-analysis",
+      "match": "^//v\\s+.*$",
+      "captures": {
+        "0": {
+          "name": "storage.type.variable.pi-analysis"
+        }
+      }
+    },
+    {
+      "name": "comment.line.metadata.output.pi-analysis",
+      "match": "^//o\\s+.*$",
+      "captures": {
+        "0": {
+          "name": "entity.other.attribute-name.pi-analysis"
+        }
+      }
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#strings"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.pi-analysis",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.pi-analysis",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "support.function.pi-analysis",
+          "match": "\\b(ArrayLength|FilterData|FirstValue|LastValue|MapData|Bod|Bom|Bonm|Day|DaySec|Hour|Minute|Month|Noon|ParseTime|Second|Weekday|Year|Yearday|EventFrame|Abs|Acos|Asin|Atn|Atn2|Ceiling|Cos|Cosh|Cot|Coth|Csc|Csch|Curve|E|Exp|Float|Floor|Frac|Int|Log|Log10|Logbase|Mod|Pi|Poly|Pow|Rate|Remainder|Round|Roundfrac|Sec|Sech|Sgn|Sin|Sinh|Sqr|Tan|Tanh|Trunc|DigState|DigText|StateNo|TagDesc|TagEU|TagExDesc|TagName|TagSource|TagSpan|TagType|TagTypVal|TagZero|Convert|DeltaValue|FindEq|FindGE|FindGT|FindLE|FindLT|FindNE|InterpolatedValues|NextEvent|NextVal|NumOfChanges|PrevEvent|PrevVal|RecordedValues|RecordedValuesByCount|SecSinceChange|TagVal|TimeEq|TimeGE|TimeGT|TimeLE|TimeLT|TimeNE|TimeStamp|Avg|Compare|Max|Median|Min|Normalrnd|Poisson|PStDev|Rand|SStDev|Total|BadVal|HasChanged|HasValueChanged|IsSet|NoOutput|TagBad|Ascii|Char|Concat|Contains|Format|InStr|LCase|Left|Len|LTrim|Mid|Right|RTrim|Split|String|Text|Trim|UCase|Cov|EventCount|LinRegr|PctGood|Range|StDev|TagAvg|TagMax|TagMean|TagMin|TagTot)\\b(?=\\()",
+          "captures": {
+            "1": {
+              "name": "support.function.pi-analysis"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.pi-analysis",
+          "match": "(?i)\\b(IF|THEN|ELSE|AND|OR|NOT|EXIT|IN)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.pi-analysis",
+          "match": "(<=|>=|==|!=|<>|=|<|>)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.pi-analysis",
+          "match": "(\\+|\\-|\\*|\\/|\\^)"
+        },
+        {
+          "name": "keyword.operator.wildcard.pi-analysis",
+          "match": "(\\*|\\?)"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "variable.other.member.pi-analysis",
+          "begin": "'",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.variable.begin.pi-analysis"
+            }
+          },
+          "end": "'",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.variable.end.pi-analysis"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.double.pi-analysis",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.pi-analysis"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.pi-analysis"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

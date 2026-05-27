@@ -1,0 +1,28 @@
+{
+    "Name": "Asin",
+    "Description": "Return the inverse sine (arcsin) of a number. The inverse sine of x is the angle in radians whose sine is equal to x .",
+    "Syntax": "Asin(x)",
+    "Arguments": [
+        {
+            "name": "x",
+            "description": "Must be a real number between -1.0 and 1.0, inclusive"
+        }
+    ],
+    "Returns": "The inverse sine of x , in radians x",
+    "Exceptions": "If x is not a number, or is less than -1.0 or greater than 1.0, an error value is returned x",
+    "Notes": "None",
+    "Example": [
+        {
+            "code": "Asin(-0.5)",
+            "description": "[Returns -0.5236]"
+        },
+        {
+            "code": "Asin(TagVal('att1','y+8h'))",
+            "description": "[Return the inverse sine of the value of 'att1' at 8am yesterday]"
+        },
+        {
+            "code": "Asin('att1')",
+            "description": "[Return the inverse sine of the value of 'att1' at trigger time]"
+        }
+    ]
+}
