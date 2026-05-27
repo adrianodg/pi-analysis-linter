@@ -28,25 +28,53 @@ class PiAnalysisHoverProvider {
         if (meta) {
             const markdown = new vscode.MarkdownString();
             
-            // Title and Description
+            // 1. Title and Description
             markdown.appendMarkdown(`### ${meta.Name}\n`);
-            markdown.appendMarkdown(`${meta.Description}\n\n`);
+            if (meta.Description && meta.Description !== "None") {
+                markdown.appendMarkdown(`${meta.Description}\n\n`);
+            }
             
-            // Syntax Section
-            markdown.appendMarkdown(`**Syntax:**\n`);
-            markdown.appendCodeblock(meta.Syntax, 'pi-analysis');
+            // 2. Syntax Section
+            if (meta.Syntax && meta.Syntax !== "None") {
+                markdown.appendMarkdown(`**Syntax:**\n`);
+                markdown.appendCodeblock(meta.Syntax, 'pi-analysis');
+                markdown.appendMarkdown(`\n`);
+            }
 
-            // Returns Section
-            if (meta.Returns) {
+            // 3. Arguments Section (Iterates through array of parameter objects)
+            if (meta.Arguments && Array.isArray(meta.Arguments) && meta.Arguments.length > 0) {
+                // Ignore empty-like descriptions or placeholders
+                const validArgs = meta.Arguments.filter(arg => arg.name && arg.name !== "None");
+                if (validArgs.length > 0) {
+                    markdown.appendMarkdown(`**Arguments:**\n`);
+                    validArgs.forEach(arg => {
+                        markdown.appendMarkdown(`* \`${arg.name}\`: ${arg.description}\n`);
+                    });
+                    markdown.appendMarkdown(`\n`);
+                }
+            }
+
+            // 4. Returns Section
+            if (meta.Returns && meta.Returns !== "None") {
                 markdown.appendMarkdown(`**Returns:** ${meta.Returns}\n\n`);
             }
 
-            // Example Section
+            // 5. Exceptions Section
+            if (meta.Exceptions && meta.Exceptions !== "None") {
+                markdown.appendMarkdown(`**Exceptions:** ${meta.Exceptions}\n\n`);
+            }
+
+            // 6. Notes Section
+            if (meta.Notes && meta.Notes !== "None") {
+                markdown.appendMarkdown(`**Notes:** ${meta.Notes}\n\n`);
+            }
+
+            // 7. Example Section
             if (meta.Example && meta.Example.length > 0) {
-                markdown.appendMarkdown(`--- \n**Example:**\n`);
+                markdown.appendMarkdown(`---\n**Example:**\n`);
                 meta.Example.forEach(ex => {
                     markdown.appendCodeblock(ex.code, 'pi-analysis');
-                    if (ex.description !== "None") {
+                    if (ex.description && ex.description !== "None") {
                         markdown.appendMarkdown(`*${ex.description}*\n`);
                     }
                 });

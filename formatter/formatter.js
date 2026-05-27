@@ -345,6 +345,50 @@ function parseClauses(tokens) {
 }
 
 /**
+ * Checks if the condition is fully wrapped in outer matching parentheses.
+ */
+function getOuterMatchingParentheses(tokens) {
+    let firstIdx = -1;
+    let lastIdx = -1;
+    for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].type !== 'whitespace' && tokens[i].type !== 'comment') {
+            if (firstIdx === -1) {
+                firstIdx = i;
+            }
+            lastIdx = i;
+        }
+    }
+    
+    if (firstIdx === -1 || lastIdx === -1 || firstIdx === lastIdx) {
+        return null;
+    }
+    
+    const firstToken = tokens[firstIdx];
+    const lastToken = tokens[lastIdx];
+    
+    if (firstToken.type === 'punctuation' && firstToken.value === '(' &&
+        lastToken.type === 'punctuation' && lastToken.value === ')') {
+        let depth = 1;
+        for (let i = firstIdx + 1; i < lastIdx; i++) {
+            const token = tokens[i];
+            if (token.type === 'punctuation' && token.value === '(') {
+                depth++;
+            } else if (token.type === 'punctuation' && token.value === ')') {
+                depth--;
+                if (depth === 0) {
+                    return null; // Parenthesis closed before the end of statement
+                }
+            }
+        }
+        if (depth === 1) {
+            return { firstIdx, lastIdx };
+        }
+    }
+    
+    return null;
+}
+
+/**
  * Formats and splits conditions at top-level logical AND / OR operators if they exceed max line length constraints.
  */
 function formatCondition(prefix, conditionTokens, maxLineLength) {
@@ -355,12 +399,22 @@ function formatCondition(prefix, conditionTokens, maxLineLength) {
         return [inlineLine];
     }
     
+    const outerParens = getOuterMatchingParentheses(conditionTokens);
+    
+    let tokensToSplit = conditionTokens;
+    let hasParens = false;
+    
+    if (outerParens) {
+        hasParens = true;
+        tokensToSplit = conditionTokens.slice(outerParens.firstIdx + 1, outerParens.lastIdx);
+    }
+    
     const segments = [];
     let currentSegment = [];
     let parenthesisDepth = 0;
     
-    for (let i = 0; i < conditionTokens.length; i++) {
-        const token = conditionTokens[i];
+    for (let i = 0; i < tokensToSplit.length; i++) {
+        const token = tokensToSplit[i];
         
         if (token.type === 'punctuation' && token.value === '(') {
             parenthesisDepth++;
@@ -387,10 +441,17 @@ function formatCondition(prefix, conditionTokens, maxLineLength) {
     }
     
     const lines = [];
-    lines.push(`${prefix} ${formatTokensInline(segments[0].tokens)}`);
-    
-    for (let j = 1; j < segments.length; j++) {
-        lines.push(formatTokensInline(segments[j].tokens));
+    if (hasParens) {
+        lines.push(`${prefix} (`);
+        for (let j = 0; j < segments.length; j++) {
+            lines.push(formatTokensInline(segments[j].tokens));
+        }
+        lines.push(`)`);
+    } else {
+        lines.push(`${prefix} ${formatTokensInline(segments[0].tokens)}`);
+        for (let j = 1; j < segments.length; j++) {
+            lines.push(formatTokensInline(segments[j].tokens));
+        }
     }
     
     return lines;
