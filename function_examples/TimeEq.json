@@ -1,0 +1,44 @@
+{
+    "Name": "TimeEq",
+    "Description": "Find the total time, within a range, when an attribute value is equal to a specified value. Time returned is in seconds.",
+    "Syntax": "TimeEq(attname, starttime, endtime, x)",
+    "Arguments": [
+        {
+            "name": "attname",
+            "description": "The name of an attribute with a PI point data reference, enclosed in single quotation marks"
+        },
+        {
+            "name": "starttime",
+            "description": "time expression representing the beginning of a time range enclosed in single quotes; can be a relative time (such as '-3h') in reference to an absolute endtime"
+        },
+        {
+            "name": "endtime",
+            "description": "time expression representing the end of a time range enclosed in single quotes; can be a relative time (such as '+1h') in reference to an absolute starttime"
+        },
+        {
+            "name": "x",
+            "description": "The reference value of the search; must be an enumeration set (string), integer or real number"
+        }
+    ],
+    "Returns": "The total time (in seconds), within a range, when an attribute value is equal to a given value",
+    "Exceptions": "None",
+    "Notes": "Bad values are excluded from TimeEq calculation TimeEq",
+    "Example": [
+        {
+            "code": "TimeEq('att1', 't', '+1h', 80)",
+            "description": "[Find the total time between 12:00 and 1:00am today when 'att1' was equal to 80. Return the result in seconds]"
+        },
+        {
+            "code": "TimeEq('att1', '-1h', '*', TagVal('att1', 't+8h'))",
+            "description": "[Find the total time in the past hour when the value of 'att1' was equal to the value at 8am today. Return the result in seconds]"
+        },
+        {
+            "code": "TimeEq('Temperature Status', '-1h', '*', \"Normal\") Expression Output Attribute (attribute mapped to a PI point) If 'Temp' > 500 THEN \"HiLimit\" ELSE \"Normal\" Temperature Status TimeEq('Temperature Status', '-1h', '*', \"Normal\")",
+            "description": "[Find the total time in the past hour when the value of the attribute 'Temperature Status' was equal to \"Normal\". Return the result in seconds]"
+        },
+        {
+            "code": "TimeEq('enum_att1', '*-1d', '*', DigState(\"Normal\", 'enum_att1'))",
+            "description": "[Find the total time in the past 24 hours when the value of 'enum_att1' was equal to \"Normal\". Return the result in seconds]"
+        }
+    ]
+}

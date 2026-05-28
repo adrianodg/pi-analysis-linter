@@ -1,578 +1,294 @@
 const { tokenize } = require('../parser/tokenizer');
 
 /**
- * Checks if a string matches the format of a PI relative time string.
- * @param {string} str 
+ * Formats a full PI Analysis document.
+ *
+ * @param {string} text The document text.
+ * @param {object} options Formatter options.
+ * @returns {string} The formatted document.
  */
-function isRelativeTime(str) {
-    const s = str.trim().toLowerCase();
-    if (s === '*' || s === 't' || s === 'y' || s === 'today' || s === 'yesterday') {
-        return true;
-    }
-    if (/^[ty\*]\s*[+-]\s*\d+\s*[a-z]+$/i.test(s)) {
-        return true;
-    }
-    if (/^[+-]\s*\d+\s*[a-z]+$/i.test(s)) {
-        return true;
-    }
-    if (/^\*-[0-9]+[a-z]+$/i.test(s) || /^\*[+-][0-9]+[a-z]+$/i.test(s)) {
-        return true;
-    }
-    return false;
+function formatDocument(text, options = {}) {
+    const lines = text.split(/\r?\n/);
+
+    return lines
+        .map((line) => formatPiAfAnalysisExpression(line, options))
+        .join('\n');
 }
 
 /**
- * Computes contextual parameters for tokens to differentiate between string literals
- * and attributes/tag names.
+ * Formats a single PI Analysis expression.
+ *
+ * @param {string} input The PI Analysis expression.
+ * @param {object} options Formatter options.
+ * @returns {string} The formatted expression.
  */
-function computeContexts(tokens) {
-    const stack = [];
-    let lastIdentifier = null;
-    let lastOperator = null;
-
-    for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-
-        if (token.type === 'whitespace' || token.type === 'comment') {
-            continue;
-        }
-
-        if (token.type === 'identifier') {
-            lastIdentifier = token.value;
-        }
-
-        if (token.type === 'punctuation' && token.value === '(') {
-            stack.push({
-                name: lastIdentifier,
-                argIndex: 0
-            });
-            lastIdentifier = null;
-        } else if (token.type === 'punctuation' && token.value === ')') {
-            stack.pop();
-        } else if (token.type === 'punctuation' && token.value === ',') {
-            if (stack.length > 0) {
-                stack[stack.length - 1].argIndex++;
-            }
-        }
-
-        if (token.type === 'operator') {
-            lastOperator = token.value;
-        } else if (token.type !== 'whitespace' && token.type !== 'comment') {
-            if (lastOperator) {
-                token.rightOfOperator = lastOperator;
-                lastOperator = null;
-            }
-        }
-
-        if (stack.length > 0) {
-            const currentFunc = stack[stack.length - 1];
-            token.functionName = currentFunc.name;
-            token.argumentIndex = currentFunc.argIndex;
-        }
+function formatPiAfAnalysisExpression(input, options = {}) {
+    if (!input.trim()) {
+        return input;
     }
+
+    const maxLineLength = options.maxLineLength || 100;
+    const tokens = tokenize(input);
+    const formatted = formatTokensInline(tokens);
+
+    if (formatted.length <= maxLineLength) {
+        return formatted;
+    }
+
+    return formatLongIfExpression(tokens, maxLineLength);
 }
 
 /**
- * Formats string tokens. Converts single quoted text string literals to double quotes.
- */
-function formatStringToken(token) {
-    if (token.type !== 'string') return token.value;
-
-    const val = token.value;
-    if (token.quote === 'double') {
-        return val;
-    }
-
-    const content = val.slice(1, -1);
-
-    if (content.includes('|') || content.includes('\\') || content.includes('.')) {
-        return val;
-    }
-
-    if (isRelativeTime(content)) {
-        return val;
-    }
-
-    if (content.length === 1 && !token.rightOfOperator) {
-        return val;
-    }
-
-    if (token.functionName && token.argumentIndex === 0) {
-        return val;
-    }
-
-    const escapedContent = content.replace(/"/g, '\\"');
-    return `"${escapedContent}"`;
-}
-
-/**
- * Helper to retrieve the previous non-whitespace token.
- */
-function getPrevNonWhitespaceToken(tokens, currentIndex) {
-    for (let j = currentIndex - 1; j >= 0; j--) {
-        if (tokens[j].type !== 'whitespace') {
-            return tokens[j];
-        }
-    }
-    return null;
-}
-
-/**
- * Identifies if a minus sign represents a unary negative prefix instead of a binary subtraction.
- */
-function isUnaryMinusContext(tokens, index) {
-    if (index === 0) return true;
-    const prev = getPrevNonWhitespaceToken(tokens, index);
-    if (!prev) return true;
-    return ['=', '<>', '>', '<', '>=', '<=', '!=', '==', '+', '-', '*', '/', '^', '(', ','].includes(prev.value);
-}
-
-/**
- * Formats a list of tokens into a single standardized line while preserving case.
+ * Formats tokens into a single normalized line.
+ *
+ * @param {Array<object>} tokens Tokenized expression.
+ * @returns {string} The inline formatted expression.
  */
 function formatTokensInline(tokens) {
     let result = '';
-    
-    for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        
+
+    tokens.forEach((token, index) => {
         if (token.type === 'whitespace') {
-            continue;
+            return;
         }
-        
+
         if (token.type === 'comment') {
-            result += token.value + ' ';
-            continue;
+            appendWithSpace(token.value);
+            return;
         }
-        
-        let tokenVal = token.value;
-        if (token.type === 'string') {
-            tokenVal = formatStringToken(token);
+
+        if (token.type === 'punctuation') {
+            handlePunctuation(token);
+            return;
         }
-        
-        if (result.length > 0) {
-            const lastChar = result[result.length - 1];
-            const nextChar = tokenVal[0];
-            
-            let needSpace = false;
-            
-            const isCompOp = (t) => ['=', '<>', '>', '<', '>=', '<=', '!=', '=='].includes(t);
-            const isArithmeticOp = (t) => ['+', '-', '*', '/', '^'].includes(t);
-            const isLogicalKeyword = (t) => ['and', 'or', 'not', 'exit', 'in'].includes(t.toLowerCase());
-            
-            const prevToken = getPrevNonWhitespaceToken(tokens, i);
-            
-            if (prevToken) {
-                const prevValLower = prevToken.value.toLowerCase();
-                const tokenValLower = tokenVal.toLowerCase();
-                const prevIsUnaryMinus = prevToken.value === '-' && isUnaryMinusContext(tokens, tokens.indexOf(prevToken));
-                
-                if (prevIsUnaryMinus) {
-                    // 1. No space after a unary minus (e.g., -10)
-                    needSpace = false;
-                } else if (isCompOp(tokenVal) || isCompOp(prevToken.value)) {
-                    // 2. Spaces around comparison operators
-                    needSpace = true;
-                } else if (isLogicalKeyword(tokenVal) || isLogicalKeyword(prevToken.value)) {
-                    // 3. Spaces around logical keywords
-                    needSpace = true;
-                } else if (['then', 'else', 'if'].includes(tokenValLower) || ['then', 'else', 'if'].includes(prevValLower)) {
-                    // 4. Spaces around control flow keywords
-                    needSpace = true;
-                } else if (isArithmeticOp(tokenVal) || isArithmeticOp(prevToken.value)) {
-                    // 5. Arithmetic operators (now takes precedence over parentheses checks)
-                    const currentIsUnaryMinus = tokenVal === '-' && isUnaryMinusContext(tokens, i);
-                    if (currentIsUnaryMinus) {
-                        if (prevToken.value === '(' || prevToken.value === ',') {
-                            needSpace = false;
-                        } else {
-                            needSpace = true;
-                        }
-                    } else {
-                        needSpace = true;
-                    }
-                } else if (tokenVal === ',') {
-                    // 6. No space before a comma
-                    needSpace = false;
-                } else if (prevToken.value === ',') {
-                    // 7. Space after a comma
-                    needSpace = true;
-                } else if (tokenVal === '(' || prevToken.value === '(') {
-                    // 8. No space around open parentheses by default
-                    needSpace = false;
-                } else if (tokenVal === ')' || prevToken.value === ')') {
-                    // 9. No space around close parentheses by default
-                    needSpace = false;
-                } else {
-                    // 10. Space between adjacent words/identifiers/numbers
-                    if (/[a-zA-Z0-9_]/.test(lastChar) && /[a-zA-Z0-9_]/.test(nextChar)) {
-                        needSpace = true;
-                    }
-                }
-            }
-            
-            if (needSpace && lastChar !== ' ') {
-                result += ' ';
-            }
+
+        if (token.type === 'operator') {
+            handleOperator(tokens, token, index);
+            return;
         }
-        
-        result += tokenVal;
-    }
-    
+
+        appendDefault(tokens, token, index);
+    });
+
     return result.trim();
+
+    /**
+     * Appends text using default spacing behavior.
+     *
+     * @param {Array<object>} allTokens All tokens.
+     * @param {object} token The current token.
+     * @param {number} index Current token index.
+     */
+    function appendDefault(allTokens, token, index) {
+        const previous = getPreviousMeaningfulToken(allTokens, index);
+
+        if (
+            previous
+            && previous.type === 'identifier'
+            && token.value === '('
+        ) {
+            result += token.value;
+            return;
+        }
+
+        if (shouldInsertSpaceBefore(result, previous, token)) {
+            result += ' ';
+        }
+
+        result += token.value;
+    }
+
+    /**
+     * Handles punctuation spacing.
+     *
+     * @param {object} token Current punctuation token.
+     */
+    function handlePunctuation(token) {
+        if (token.value === '(') {
+            result = result.trimEnd();
+            result += '(';
+            return;
+        }
+
+        if (token.value === ')') {
+            result = result.trimEnd();
+            result += ')';
+            return;
+        }
+
+        if (token.value === ',') {
+            result = result.trimEnd();
+            result += ', ';
+        }
+    }
+
+    /**
+     * Handles operator spacing.
+     *
+     * @param {Array<object>} allTokens All tokens.
+     * @param {object} token Current operator token.
+     * @param {number} index Current token index.
+     */
+    function handleOperator(allTokens, token, index) {
+        if (token.value === '-' && isUnaryMinusContext(allTokens, index)) {
+            result = result.trimEnd();
+            result += '-';
+            return;
+        }
+
+        result = result.trimEnd();
+        result += ` ${token.value} `;
+    }
+
+    /**
+     * Appends text with a space before it.
+     *
+     * @param {string} value Text to append.
+     */
+    function appendWithSpace(value) {
+        if (result && !result.endsWith(' ')) {
+            result += ' ';
+        }
+
+        result += value;
+    }
 }
 
 /**
- * Separates top-level assignment statements (e.g. "VarName = ...") from the expression.
+ * Performs basic multiline formatting for long IF expressions.
+ *
+ * @param {Array<object>} tokens Tokenized expression.
+ * @param {number} maxLineLength Maximum line length.
+ * @returns {string} Formatted expression.
  */
-function separateAssignment(statement) {
-    const tokens = tokenize(statement);
-    let nonWs = [];
-    for (let i = 0; i < tokens.length; i++) {
-        if (tokens[i].type !== 'whitespace') {
-            nonWs.push({ token: tokens[i], index: i });
-        }
+function formatLongIfExpression(tokens, maxLineLength) {
+    const inline = formatTokensInline(tokens);
+
+    if (!hasKeyword(tokens, 'IF')) {
+        return inline;
     }
-    
-    if (nonWs.length >= 2) {
-        const first = nonWs[0].token;
-        const second = nonWs[1].token;
-        
-        if (first.type === 'identifier' && second.type === 'operator' && second.value === '=') {
-            const splitIndex = nonWs[1].index + 1;
-            const prefixTokens = tokens.slice(0, splitIndex);
-            const exprTokens = tokens.slice(splitIndex);
-            return {
-                prefix: formatTokensInline(prefixTokens) + ' ',
-                exprTokens: exprTokens
-            };
+
+    const lines = [];
+    let currentTokens = [];
+
+    tokens.forEach((token) => {
+        if (token.type === 'whitespace') {
+            return;
         }
+
+        if (
+            token.type === 'keyword'
+            && ['THEN', 'ELSE'].includes(token.value.toUpperCase())
+            && currentTokens.length > 0
+        ) {
+            lines.push(formatTokensInline(currentTokens));
+            currentTokens = [token];
+            return;
+        }
+
+        currentTokens.push(token);
+    });
+
+    if (currentTokens.length > 0) {
+        lines.push(formatTokensInline(currentTokens));
     }
-    
-    return {
-        prefix: '',
-        exprTokens: tokens
-    };
+
+    const formatted = lines.join('\n');
+
+    if (formatted.length <= maxLineLength * 2) {
+        return formatted;
+    }
+
+    return inline;
 }
 
 /**
- * Parses expression into top-level logical clauses for conditional logic (IF / THEN / ELSE / ELSE IF).
+ * Checks if the token list contains a keyword.
+ *
+ * @param {Array<object>} tokens Tokenized expression.
+ * @param {string} keyword Keyword to search.
+ * @returns {boolean} True when the keyword exists.
  */
-function parseClauses(tokens) {
-    const clauses = [];
-    let currentClause = null;
-    let parenthesisDepth = 0;
-    let i = 0;
-    
-    let hasTopLevelIf = false;
-    for (let j = 0; j < tokens.length; j++) {
-        const t = tokens[j];
-        if (t.type === 'punctuation' && t.value === '(') parenthesisDepth++;
-        if (t.type === 'punctuation' && t.value === ')') parenthesisDepth--;
-        if (parenthesisDepth === 0 && t.type === 'keyword' && t.value.toLowerCase() === 'if') {
-            hasTopLevelIf = true;
-            break;
-        }
-    }
-    
-    if (!hasTopLevelIf) {
-        return null;
-    }
-    
-    parenthesisDepth = 0;
-    let currentPart = 'condition';
-    
-    while (i < tokens.length) {
-        const token = tokens[i];
-        
-        if (token.type === 'punctuation' && token.value === '(') {
-            parenthesisDepth++;
-        } else if (token.type === 'punctuation' && token.value === ')') {
-            parenthesisDepth--;
-        }
-        
-        if (parenthesisDepth === 0) {
-            if (token.type === 'keyword' && token.value.toLowerCase() === 'if') {
-                currentClause = { type: 'if', ifToken: token, conditionTokens: [], bodyTokens: [] };
-                clauses.push(currentClause);
-                currentPart = 'condition';
-                i++;
-                continue;
-            }
-            
-            if (token.type === 'keyword' && token.value.toLowerCase() === 'else') {
-                let nextIdx = i + 1;
-                while (nextIdx < tokens.length && (tokens[nextIdx].type === 'whitespace' || tokens[nextIdx].type === 'comment')) {
-                    nextIdx++;
-                }
-                if (nextIdx < tokens.length && tokens[nextIdx].type === 'keyword' && tokens[nextIdx].value.toLowerCase() === 'if') {
-                    currentClause = { type: 'else if', elseToken: token, ifToken: tokens[nextIdx], conditionTokens: [], bodyTokens: [] };
-                    clauses.push(currentClause);
-                    currentPart = 'condition';
-                    i = nextIdx + 1;
-                    continue;
-                } else {
-                    currentClause = { type: 'else', elseToken: token, bodyTokens: [] };
-                    clauses.push(currentClause);
-                    currentPart = 'body';
-                    i++;
-                    continue;
-                }
-            }
-            
-            if (token.type === 'keyword' && token.value.toLowerCase() === 'then') {
-                if (currentClause) {
-                    currentClause.thenToken = token;
-                }
-                currentPart = 'body';
-                i++;
-                continue;
-            }
-        }
-        
-        if (currentClause) {
-            if (currentPart === 'condition' && currentClause.conditionTokens) {
-                currentClause.conditionTokens.push(token);
-            } else {
-                currentClause.bodyTokens.push(token);
-            }
-        }
-        
-        i++;
-    }
-    
-    return clauses;
+function hasKeyword(tokens, keyword) {
+    return tokens.some((token) => (
+        token.type === 'keyword'
+        && token.value.toUpperCase() === keyword.toUpperCase()
+    ));
 }
 
 /**
- * Checks if the condition is fully wrapped in outer matching parentheses.
+ * Gets the previous meaningful token.
+ *
+ * @param {Array<object>} tokens Tokenized expression.
+ * @param {number} index Current index.
+ * @returns {object | null} Previous non-whitespace/comment token.
  */
-function getOuterMatchingParentheses(tokens) {
-    let firstIdx = -1;
-    let lastIdx = -1;
-    for (let i = 0; i < tokens.length; i++) {
-        if (tokens[i].type !== 'whitespace' && tokens[i].type !== 'comment') {
-            if (firstIdx === -1) {
-                firstIdx = i;
-            }
-            lastIdx = i;
+function getPreviousMeaningfulToken(tokens, index) {
+    for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+        const token = tokens[previousIndex];
+
+        if (token.type !== 'whitespace' && token.type !== 'comment') {
+            return token;
         }
     }
-    
-    if (firstIdx === -1 || lastIdx === -1 || firstIdx === lastIdx) {
-        return null;
-    }
-    
-    const firstToken = tokens[firstIdx];
-    const lastToken = tokens[lastIdx];
-    
-    if (firstToken.type === 'punctuation' && firstToken.value === '(' &&
-        lastToken.type === 'punctuation' && lastToken.value === ')') {
-        let depth = 1;
-        for (let i = firstIdx + 1; i < lastIdx; i++) {
-            const token = tokens[i];
-            if (token.type === 'punctuation' && token.value === '(') {
-                depth++;
-            } else if (token.type === 'punctuation' && token.value === ')') {
-                depth--;
-                if (depth === 0) {
-                    return null; // Parenthesis closed before the end of statement
-                }
-            }
-        }
-        if (depth === 1) {
-            return { firstIdx, lastIdx };
-        }
-    }
-    
+
     return null;
 }
 
 /**
- * Formats and splits conditions at top-level logical AND / OR operators if they exceed max line length constraints.
+ * Checks whether spacing should be inserted before a token.
+ *
+ * @param {string} result Current formatted result.
+ * @param {object | null} previous Previous meaningful token.
+ * @param {object} token Current token.
+ * @returns {boolean} True when a space should be inserted.
  */
-function formatCondition(prefix, conditionTokens, maxLineLength) {
-    const inlineCondition = formatTokensInline(conditionTokens);
-    const inlineLine = `${prefix} ${inlineCondition}`;
-    
-    if (inlineLine.length <= maxLineLength) {
-        return [inlineLine];
+function shouldInsertSpaceBefore(result, previous, token) {
+    if (!result || result.endsWith(' ')) {
+        return false;
     }
-    
-    const outerParens = getOuterMatchingParentheses(conditionTokens);
-    
-    let tokensToSplit = conditionTokens;
-    let hasParens = false;
-    
-    if (outerParens) {
-        hasParens = true;
-        tokensToSplit = conditionTokens.slice(outerParens.firstIdx + 1, outerParens.lastIdx);
+
+    if (!previous) {
+        return false;
     }
-    
-    const segments = [];
-    let currentSegment = [];
-    let parenthesisDepth = 0;
-    
-    for (let i = 0; i < tokensToSplit.length; i++) {
-        const token = tokensToSplit[i];
-        
-        if (token.type === 'punctuation' && token.value === '(') {
-            parenthesisDepth++;
-        } else if (token.type === 'punctuation' && token.value === ')') {
-            parenthesisDepth--;
-        }
-        
-        if (parenthesisDepth === 0 && token.type === 'keyword' && (token.value.toLowerCase() === 'and' || token.value.toLowerCase() === 'or')) {
-            if (currentSegment.length > 0) {
-                segments.push({ tokens: currentSegment });
-            }
-            currentSegment = [token];
-        } else {
-            currentSegment.push(token);
-        }
+
+    if (token.type === 'punctuation' && token.value === '(') {
+        return false;
     }
-    
-    if (currentSegment.length > 0) {
-        segments.push({ tokens: currentSegment });
+
+    if (previous.type === 'punctuation' && previous.value === '(') {
+        return false;
     }
-    
-    if (segments.length <= 1) {
-        return [inlineLine];
+
+    if (token.type === 'punctuation' && token.value === ')') {
+        return false;
     }
-    
-    const lines = [];
-    if (hasParens) {
-        lines.push(`${prefix} (`);
-        for (let j = 0; j < segments.length; j++) {
-            lines.push(formatTokensInline(segments[j].tokens));
-        }
-        lines.push(`)`);
-    } else {
-        lines.push(`${prefix} ${formatTokensInline(segments[0].tokens)}`);
-        for (let j = 1; j < segments.length; j++) {
-            lines.push(formatTokensInline(segments[j].tokens));
-        }
-    }
-    
-    return lines;
+
+    return true;
 }
 
 /**
- * Formats a single expression segment according to nesting patterns and length constraints.
+ * Checks whether a minus operator is unary.
+ *
+ * @param {Array<object>} tokens Tokenized expression.
+ * @param {number} index Current token index.
+ * @returns {boolean} True when minus is unary.
  */
-function formatPiAfAnalysisExpression(input, options = {}) {
-    const maxLineLength = options.maxLineLength || 100;
+function isUnaryMinusContext(tokens, index) {
+    const previous = getPreviousMeaningfulToken(tokens, index);
 
-    if (!input.trim()) return input;
-
-    const { prefix, exprTokens } = separateAssignment(input);
-    computeContexts(exprTokens);
-
-    const clauses = parseClauses(exprTokens);
-
-    if (!clauses) {
-        return prefix + formatTokensInline(exprTokens);
+    if (!previous) {
+        return true;
     }
 
-    const hasElseIf = clauses.some(c => c.type === 'else if');
-    const isSimpleIf = !hasElseIf;
-
-    const inlineFormatted = formatTokensInline(exprTokens);
-    const fullInlineLength = prefix.length + inlineFormatted.length;
-
-    const useMultiline = !isSimpleIf || (fullInlineLength > maxLineLength);
-
-    if (!useMultiline) {
-        return prefix + inlineFormatted;
+    if (previous.type === 'operator') {
+        return true;
     }
 
-    const lines = [];
-
-    for (let i = 0; i < clauses.length; i++) {
-        const clause = clauses[i];
-
-        if (clause.type === 'if') {
-            const ifKeyword = clause.ifToken ? clause.ifToken.value : 'if';
-            const condLines = formatCondition(ifKeyword, clause.conditionTokens, maxLineLength - prefix.length);
-            if (condLines.length > 0) {
-                condLines[0] = prefix + condLines[0];
-            }
-            lines.push(...condLines);
-
-            const thenKeyword = clause.thenToken ? clause.thenToken.value : 'then';
-            const bodyInline = formatTokensInline(clause.bodyTokens);
-            lines.push(`${thenKeyword} ${bodyInline}`);
-        } else if (clause.type === 'else if') {
-            const elseKeyword = clause.elseToken ? clause.elseToken.value : 'else';
-            const ifKeyword = clause.ifToken ? clause.ifToken.value : 'if';
-            const condLines = formatCondition(`${elseKeyword} ${ifKeyword}`, clause.conditionTokens, maxLineLength);
-            lines.push(...condLines);
-
-            const thenKeyword = clause.thenToken ? clause.thenToken.value : 'then';
-            const bodyInline = formatTokensInline(clause.bodyTokens);
-            lines.push(`${thenKeyword} ${bodyInline}`);
-        } else if (clause.type === 'else') {
-            const elseKeyword = clause.elseToken ? clause.elseToken.value : 'else';
-            const bodyInline = formatTokensInline(clause.bodyTokens);
-            lines.push(`${elseKeyword} ${bodyInline}`);
-        }
-    }
-
-    return lines.join('\n');
-}
-
-/**
- * Splits document content into separate logical statements to format sequentially.
- */
-function splitIntoStatements(text) {
-    const rawLines = text.split(/\r?\n/);
-    const statements = [];
-    let currentStatement = '';
-
-    for (let i = 0; i < rawLines.length; i++) {
-        const line = rawLines[i];
-        const trimmed = line.trim();
-
-        if (trimmed === '') {
-            if (currentStatement !== '') {
-                statements.push(currentStatement);
-                currentStatement = '';
-            }
-            statements.push('');
-            continue;
-        }
-
-        const isContinuation = /^(then|else|and|or|else\s+if)\b/i.test(trimmed);
-
-        if (isContinuation && currentStatement !== '') {
-            currentStatement += ' ' + trimmed;
-        } else {
-            if (currentStatement !== '') {
-                statements.push(currentStatement);
-            }
-            currentStatement = trimmed;
-        }
-    }
-
-    if (currentStatement !== '') {
-        statements.push(currentStatement);
-    }
-
-    return statements;
-}
-
-/**
- * Formats a full document containing one or multiple expression declarations.
- */
-function formatDocument(text, options = {}) {
-    const statements = splitIntoStatements(text);
-    const formattedStatements = statements.map(statement => {
-        if (statement === '') {
-            return '';
-        }
-        return formatPiAfAnalysisExpression(statement, options);
-    });
-    return formattedStatements.join('\n');
+    return (
+        previous.type === 'punctuation'
+        && ['(', ','].includes(previous.value)
+    );
 }
 
 module.exports = {

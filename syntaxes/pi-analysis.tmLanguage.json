@@ -53,7 +53,7 @@
       "patterns": [
         {
           "name": "support.function.pi-analysis",
-          "match": "\\b(ArrayLength|FilterData|FirstValue|LastValue|MapData|Bod|Bom|Bonm|Day|DaySec|Hour|Minute|Month|Noon|ParseTime|Second|Weekday|Year|Yearday|EventFrame|Abs|Acos|Asin|Atn|Atn2|Ceiling|Cos|Cosh|Cot|Coth|Csc|Csch|Curve|E|Exp|Float|Floor|Frac|Int|Log|Log10|Logbase|Mod|Pi|Poly|Pow|Rate|Remainder|Round|Roundfrac|Sec|Sech|Sgn|Sin|Sinh|Sqr|Tan|Tanh|Trunc|DigState|DigText|StateNo|TagDesc|TagEU|TagExDesc|TagName|TagSource|TagSpan|TagType|TagTypVal|TagZero|Convert|DeltaValue|FindEq|FindGE|FindGT|FindLE|FindLT|FindNE|InterpolatedValues|NextEvent|NextVal|NumOfChanges|PrevEvent|PrevVal|RecordedValues|RecordedValuesByCount|SecSinceChange|TagVal|TimeEq|TimeGE|TimeGT|TimeLE|TimeLT|TimeNE|TimeStamp|Avg|Compare|Max|Median|Min|Normalrnd|Poisson|PStDev|Rand|SStDev|Total|BadVal|HasChanged|HasValueChanged|IsSet|NoOutput|TagBad|Ascii|Char|Concat|Contains|Format|InStr|LCase|Left|Len|LTrim|Mid|Right|RTrim|Split|String|Text|Trim|UCase|Cov|EventCount|LinRegr|PctGood|Range|StDev|TagAvg|TagMax|TagMean|TagMin|TagTot)\\b(?=\\()",
+          "match": "\\b(ArrayLength|FilterData|FirstValue|LastValue|MapData|Bod|Bom|Bonm|Day|DaySec|Hour|Minute|Month|Noon|ParseTime|Second|Weekday|Year|Yearday|EventFrame|Abs|Acos|Asin|Atn|Atn2|Ceiling|Cos|Cosh|Cot|Coth|Csc|Csch|Curve|E|Exp|Float|Floor|Frac|Int|Log|Log10|Logbase|Mod|Pi|Poly|Pow|Rate|Remainder|Round|Roundfrac|Sec|Sech|Sgn|Sin|Sinh|Sqr|Tan|Tanh|Trunc|DigState|DigText|StateNo|TagDesc|TagEU|TagExDesc|TagName|TagSource|TagSpan|TagType|TagTypVal|TagZero|Convert|DeltaValue|FindEq|FindGE|FindGT|FindLE|FindLT|FindNE|InterpolatedValues|NextEvent|NextVal|NumOfChanges|PrevEvent|PrevVal|RecordedValues|RecordedValuesByCount|SecSinceChange|TagVal|TimeEq|TimeGE|TimeGT|TimeLE|TimeLT|TimeNE|TimeStamp|Avg|Compare|Max|Median|Min|Normalrnd|Poisson|PStDev|Rand|SStDev|Total|BadVal|HasChanged|HasValueChanged|IsSet|NoOutput|TagBad|Ascii|Char|Concat|Contains|Format|InStr|LCase|Left|Len|LTrim|Mid|Right|RTrim|Split|String|Text|Trim|UCase|Cov|EventCount|LinRegr|PctGood|Range|StDev|TagAvg|TagMax|TagMean|TagMin|TagTot|EXIT)\\b(?=\\()",
           "captures": {
             "1": {
               "name": "support.function.pi-analysis"
@@ -66,7 +66,7 @@
       "patterns": [
         {
           "name": "keyword.control.pi-analysis",
-          "match": "(?i)\\b(IF|THEN|ELSE|AND|OR|NOT|EXIT|IN)\\b"
+          "match": "(?i)\\b(IF|THEN|ELSE|AND|OR|NOT|IN)\\b"
         }
       ]
     },

@@ -34,6 +34,16 @@
         "scopeName": "source.pi-analysis",
         "path": "./syntaxes/pi-analysis.tmLanguage.json"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "PI Analysis",
+      "properties": {
+        "piAnalysis.formatter.maxLineLength": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum line length before formatter splits expressions."
+        }
+      }
+    }
   }
 }

@@ -1,0 +1,24 @@
+{
+    "Name": "THEN",
+    "Description": "Operator that returns the first of two specified values when the conditional expression in IF-THEN-ELSE statement is True.",
+    "Syntax": "IF(expression) THEN (x) ELSE (y)",
+    "Arguments": [
+        {
+            "name": "expression",
+            "description": "Any expression that evaluates to true or false"
+        },
+        {
+            "name": "x",
+            "description": ", y An expression that evaluates to an output value"
+        }
+    ],
+    "Returns": "x when the conditional expression is true and y when the expression is false x y",
+    "Exceptions": "None",
+    "Notes": "None",
+    "Example": [
+        {
+            "code": "IF ('att1' > 50) THEN ('att2') ELSE ('att3')",
+            "description": "[If the value of 'att1' is greater than 50, then return the value of 'att2'; otherwise return the value of 'att3']"
+        }
+    ]
+}
